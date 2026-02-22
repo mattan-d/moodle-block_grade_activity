@@ -1,0 +1,90 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_grade_activity/grading_interface
+
+    Active grading state – search bar, student table, and save button.
+
+    Context variables required:
+    * cmid        - int     - Course module ID.
+    * grademax    - string  - Maximum grade (formatted).
+    * hasstudents - bool    - Whether any students exist.
+    * students[]  - array   - Each entry contains:
+        * userid      - int    - Student user ID.
+        * userpicture - string - Rendered user picture HTML.
+        * fullname    - string - Student full name.
+        * grade       - string - Current grade value (may be empty).
+        * grademax    - string - Max grade (for the input max attribute).
+}}
+<div class="block_grade_activity_grading" data-cmid="{{cmid}}">
+    {{! Sticky search bar }}
+    <div class="mb-2 position-sticky" style="top:0;z-index:10;background:inherit;">
+        <label for="grade-activity-search" class="sr-only">
+            {{#str}} searchstudents, block_grade_activity {{/str}}
+        </label>
+        <input type="text"
+               id="grade-activity-search"
+               class="form-control form-control-sm"
+               placeholder="{{#str}} searchstudents, block_grade_activity {{/str}}"
+               autocomplete="off" />
+    </div>
+
+    {{#hasstudents}}
+    <div class="table-responsive">
+        <table class="generaltable table table-sm table-striped" id="grade-activity-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{#str}} userpicture, block_grade_activity {{/str}}</th>
+                    <th scope="col">{{#str}} fullname, block_grade_activity {{/str}}</th>
+                    <th scope="col">{{#str}} grade, block_grade_activity {{/str}} (/ {{grademax}})</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#students}}
+                <tr>
+                    <td class="align-middle">{{{userpicture}}}</td>
+                    <td class="align-middle student-name">{{fullname}}</td>
+                    <td class="align-middle">
+                        <input type="number"
+                               class="form-control form-control-sm grade-input"
+                               data-userid="{{userid}}"
+                               value="{{grade}}"
+                               min="0"
+                               max="{{grademax}}"
+                               step="0.01"
+                               aria-label="{{#str}} grade, block_grade_activity {{/str}} – {{fullname}}" />
+                    </td>
+                </tr>
+                {{/students}}
+            </tbody>
+        </table>
+    </div>
+
+    <button id="grade-activity-save"
+            class="btn btn-primary btn-block w-100 mt-2"
+            type="button"
+            disabled>
+        {{#str}} savegrades, block_grade_activity {{/str}}
+    </button>
+    {{/hasstudents}}
+
+    {{^hasstudents}}
+    <p class="text-muted mt-2">
+        {{#str}} nostudents, block_grade_activity {{/str}}
+    </p>
+    {{/hasstudents}}
+</div>

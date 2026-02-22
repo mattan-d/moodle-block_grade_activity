@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="blocks/grade_activity/db" VERSION="2025021900"
+       COMMENT="XMLDB file for block_grade_activity">
+  <TABLES>
+    <TABLE NAME="block_grade_activity_link"
+           COMMENT="Maps a manual grade item to the course module it belongs to.">
+      <FIELDS>
+        <FIELD NAME="id"          TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="itemid"      TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"
+               COMMENT="grade_items.id of the manual grade item"/>
+        <FIELD NAME="cmid"        TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"
+               COMMENT="course_modules.id of the activity"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_itemid" TYPE="foreign" FIELDS="itemid" REFTABLE="grade_items" REFFIELDS="id"/>
+        <KEY NAME="fk_cmid"   TYPE="foreign" FIELDS="cmid"   REFTABLE="course_modules" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="uix_itemid" UNIQUE="true" FIELDS="itemid"/>
+        <INDEX NAME="uix_cmid"   UNIQUE="true" FIELDS="cmid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
