@@ -28,208 +28,227 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import Ajax from 'core/ajax';
-import Notification from 'core/notification';
-import {add as addToast} from 'core/toast';
-import {get_string as getString} from 'core/str';
-
-// ---------------------------------------------------------------------------
-// Setup state – "Enable Grading" button
-// ---------------------------------------------------------------------------
-
-/**
- * Initialise the setup-state UI.
- *
- * @param {number} cmid Course-module ID.
- */
-export const initSetup = (cmid) => {
-    const container = document.querySelector('.block_grade_activity_setup');
-    if (!container) {
-        return;
-    }
-
-    const enableBtn = container.querySelector('#grade-activity-enable');
-    if (!enableBtn) {
-        return;
-    }
-
-    enableBtn.addEventListener('click', () => {
-        enableBtn.disabled = true;
-        enableBtn.textContent = '…';
-
-        Ajax.call([{
-            methodname: 'block_grade_activity_enable_grading',
-            args: {cmid},
-            done: () => {
-                // Reload the page so the block re-renders in "active" state.
-                window.location.reload();
-            },
-            fail: (err) => {
-                enableBtn.disabled = false;
-                Notification.exception(err);
-            },
-        }]);
-    });
-};
-
-// ---------------------------------------------------------------------------
-// Active state – grading interface
-// ---------------------------------------------------------------------------
-
-/**
- * Initialise the grading-interface UI.
- *
- * @param {number} cmid     Course-module ID.
- * @param {number} grademax Maximum allowed grade.
- */
-export const init = (cmid, grademax) => {
-    const container = document.querySelector('.block_grade_activity_grading');
-    if (!container) {
-        return;
-    }
-
-    const searchInput = container.querySelector('#grade-activity-search');
-    const saveButton  = container.querySelector('#grade-activity-save');
-    const gradeInputs = container.querySelectorAll('.grade-input');
-
-    if (!saveButton || gradeInputs.length === 0) {
-        return;
-    }
-
-    // Store original values so we can detect changes.
-    const originalValues = new Map();
-    gradeInputs.forEach((input) => {
-        originalValues.set(input.dataset.userid, input.value);
-    });
-
-    // ----- Search / filter -------------------------------------------------
-
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            const query = searchInput.value.trim().toLowerCase();
-            const rows  = container.querySelectorAll('#grade-activity-table tbody tr');
-
-            rows.forEach((row) => {
-                const nameCell = row.querySelector('.student-name');
-                if (!nameCell) {
-                    return;
-                }
-                const name    = nameCell.textContent.toLowerCase();
-                row.hidden = query !== '' && !name.includes(query);
-            });
-        });
-    }
-
-    // ----- Dirty-state tracking --------------------------------------------
-
-    const checkDirty = () => {
-        let dirty = false;
-        gradeInputs.forEach((input) => {
-            if (input.value !== originalValues.get(input.dataset.userid)) {
-                dirty = true;
-            }
-        });
-        saveButton.disabled = !dirty;
-    };
-
-    gradeInputs.forEach((input) => {
-        input.addEventListener('input', checkDirty);
-    });
-
-    // ----- Validation helper -----------------------------------------------
+define([
+    'core/ajax',
+    'core/notification',
+    'core/toast',
+    'core/str'
+], function(Ajax, Notification, Toast, Str) {
 
     /**
-     * Return true if the value is a valid grade within range.
+     * Run a callback when the DOM is ready (so block content is available).
      *
-     * @param  {string}  val Raw input value.
-     * @return {boolean}
+     * @param {Function} fn Callback to run.
      */
-    const isValidGrade = (val) => {
-        if (val === '') {
-            return true; // Empty means "no change".
+    var whenReady = function(fn) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fn);
+        } else {
+            setTimeout(fn, 0);
         }
-        const num = parseFloat(val);
-        return !isNaN(num) && num >= 0 && num <= grademax;
     };
 
-    // Highlight invalid inputs on blur.
-    gradeInputs.forEach((input) => {
-        input.addEventListener('blur', () => {
-            if (!isValidGrade(input.value)) {
-                input.classList.add('is-invalid');
-            } else {
-                input.classList.remove('is-invalid');
-            }
-        });
-    });
+    // ---------------------------------------------------------------------------
+    // Setup state – "Enable Grading" button
+    // ---------------------------------------------------------------------------
 
-    // ----- Save handler ----------------------------------------------------
-
-    saveButton.addEventListener('click', async () => {
-        // Collect changed & valid grades.
-        const grades = [];
-        let hasInvalid = false;
-
-        gradeInputs.forEach((input) => {
-            const uid = input.dataset.userid;
-
-            // Skip unchanged.
-            if (input.value === originalValues.get(uid)) {
+    /**
+     * Initialise the setup-state UI.
+     *
+     * @param {number} cmid Course-module ID.
+     */
+    var initSetup = function(cmid) {
+        whenReady(function() {
+            var container = document.querySelector('.block_grade_activity_setup');
+            if (!container) {
                 return;
             }
 
-            // Skip empty (user cleared a grade – not sent).
-            if (input.value === '') {
+            var enableBtn = container.querySelector('#grade-activity-enable');
+            if (!enableBtn) {
                 return;
             }
 
-            if (!isValidGrade(input.value)) {
-                hasInvalid = true;
-                input.classList.add('is-invalid');
-                return;
-            }
+            var originalButtonText = enableBtn.textContent;
 
-            grades.push({
-                userid: parseInt(uid, 10),
-                grade:  parseFloat(input.value),
+            enableBtn.addEventListener('click', function() {
+                enableBtn.disabled = true;
+                enableBtn.textContent = '…';
+
+                Ajax.call([{
+                    methodname: 'block_grade_activity_enable_grading',
+                    args: {cmid: cmid},
+                    done: function() {
+                        window.location.reload();
+                    },
+                    fail: function(err) {
+                        enableBtn.disabled = false;
+                        enableBtn.textContent = originalButtonText;
+                        Notification.exception(err);
+                    }
+                }]);
             });
         });
+    };
 
-        if (hasInvalid) {
-            const msg = await getString('invalidgrade', 'block_grade_activity', grademax);
-            Notification.addNotification({message: msg, type: 'error'});
-            return;
-        }
+    // ---------------------------------------------------------------------------
+    // Active state – grading interface
+    // ---------------------------------------------------------------------------
 
-        if (grades.length === 0) {
-            return;
-        }
+    /**
+     * Initialise the grading-interface UI.
+     *
+     * @param {number} cmid     Course-module ID.
+     * @param {number} grademax Maximum allowed grade.
+     */
+    var init = function(cmid, grademax) {
+        whenReady(function() {
+            var container = document.querySelector('.block_grade_activity_grading');
+            if (!container) {
+                return;
+            }
 
-        // Disable button while saving.
-        saveButton.disabled = true;
-        const originalLabel = saveButton.textContent;
-        saveButton.textContent = await getString('saving', 'block_grade_activity');
+            var searchInput = container.querySelector('#grade-activity-search');
+            var saveButton = container.querySelector('#grade-activity-save');
+            var gradeInputs = container.querySelectorAll('.grade-input');
 
-        Ajax.call([{
-            methodname: 'block_grade_activity_save_grades',
-            args: {cmid, grades},
-            done: async () => {
-                // Update stored originals.
-                gradeInputs.forEach((input) => {
-                    originalValues.set(input.dataset.userid, input.value);
+            if (!saveButton || gradeInputs.length === 0) {
+                return;
+            }
+
+            var originalValues = new Map();
+            gradeInputs.forEach(function(input) {
+                originalValues.set(input.dataset.userid, input.value);
+            });
+
+            // ----- Search / filter -------------------------------------------------
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    var query = searchInput.value.trim().toLowerCase();
+                    var rows = container.querySelectorAll('#grade-activity-table tbody tr');
+
+                    rows.forEach(function(row) {
+                        var nameCell = row.querySelector('.student-name');
+                        if (!nameCell) {
+                            return;
+                        }
+                        var name = nameCell.textContent.toLowerCase();
+                        row.hidden = query !== '' && !name.includes(query);
+                    });
+                });
+            }
+
+            // ----- Dirty-state tracking --------------------------------------------
+
+            var checkDirty = function() {
+                var dirty = false;
+                gradeInputs.forEach(function(input) {
+                    if (input.value !== originalValues.get(input.dataset.userid)) {
+                        dirty = true;
+                    }
+                });
+                saveButton.disabled = !dirty;
+            };
+
+            gradeInputs.forEach(function(input) {
+                input.addEventListener('input', checkDirty);
+            });
+
+            // ----- Validation helper -----------------------------------------------
+
+            var isValidGrade = function(val) {
+                if (val === '') {
+                    return true;
+                }
+                var num = parseFloat(val);
+                return !isNaN(num) && num >= 0 && num <= grademax;
+            };
+
+            gradeInputs.forEach(function(input) {
+                input.addEventListener('blur', function() {
+                    if (!isValidGrade(input.value)) {
+                        input.classList.add('is-invalid');
+                    } else {
+                        input.classList.remove('is-invalid');
+                    }
+                });
+            });
+
+            // ----- Save handler ----------------------------------------------------
+
+            saveButton.addEventListener('click', function() {
+                var grades = [];
+                var hasInvalid = false;
+
+                gradeInputs.forEach(function(input) {
+                    var uid = input.dataset.userid;
+
+                    if (input.value === originalValues.get(uid)) {
+                        return;
+                    }
+
+                    if (input.value === '') {
+                        return;
+                    }
+
+                    if (!isValidGrade(input.value)) {
+                        hasInvalid = true;
+                        input.classList.add('is-invalid');
+                        return;
+                    }
+
+                    grades.push({
+                        userid: parseInt(uid, 10),
+                        grade: parseFloat(input.value)
+                    });
                 });
 
-                saveButton.textContent = originalLabel;
-                saveButton.disabled = true; // No longer dirty.
+                if (hasInvalid) {
+                    Str.get_string('invalidgrade', 'block_grade_activity', grademax).then(function(msg) {
+                        Notification.addNotification({message: msg, type: 'error'});
+                    });
+                    return;
+                }
 
-                const successMsg = await getString('gradessaved', 'block_grade_activity');
-                addToast(successMsg);
-            },
-            fail: (err) => {
-                saveButton.textContent = originalLabel;
-                checkDirty();
-                Notification.exception(err);
-            },
-        }]);
-    });
-};
+                if (grades.length === 0) {
+                    return;
+                }
+
+                saveButton.disabled = true;
+                var originalLabel = saveButton.textContent;
+
+                Str.get_string('saving', 'block_grade_activity').then(function(savingText) {
+                    saveButton.textContent = savingText;
+
+                    Ajax.call([{
+                        methodname: 'block_grade_activity_save_grades',
+                        args: {cmid: cmid, grades: grades},
+                        done: function() {
+                            gradeInputs.forEach(function(input) {
+                                originalValues.set(input.dataset.userid, input.value);
+                            });
+
+                            saveButton.textContent = originalLabel;
+                            saveButton.disabled = true;
+
+                            Str.get_string('gradessaved', 'block_grade_activity').then(function(successMsg) {
+                                Toast.add(successMsg);
+                            });
+                        },
+                        fail: function(err) {
+                            saveButton.textContent = originalLabel;
+                            checkDirty();
+                            Notification.exception(err);
+                        }
+                    }]);
+                });
+            });
+        });
+    };
+
+    return {
+        initSetup: initSetup,
+        init: init
+    };
+});
