@@ -2,7 +2,7 @@
 
 A Moodle block that adds manual grading from any activity page and syncs grades to the course gradebook.
 
-**Copyright:** CentricApp LTD  
+**Copyright:** [CentricApp LTD](https://centricapp.co.il)  
 **Dev Team:** dev@centricapp.co.il
 
 ---

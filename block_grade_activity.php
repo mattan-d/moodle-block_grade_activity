@@ -37,7 +37,7 @@ class block_grade_activity extends block_base {
     }
 
     /**
-     * Allow block on course and activity (module) pages so it appears in the block list.
+     * Restrict block to activity (module) pages only.
      *
      * @return array
      */
@@ -45,7 +45,7 @@ class block_grade_activity extends block_base {
         return [
             'mod'    => true,
             'site'   => false,
-            'course' => true,
+            'course' => false,
             'my'     => false,
         ];
     }
@@ -61,8 +61,8 @@ class block_grade_activity extends block_base {
 
     /**
      * Control whether a user can add this block to a given page.
-     * On course page: allow if user can edit. On activity page: also check exclusion
-     * (activity must not already have a native grade item).
+     * Implements exclusion logic: returns false if the activity already has
+     * a native grade item in the gradebook.
      *
      * @param  \moodle_page $page
      * @return bool
@@ -72,13 +72,7 @@ class block_grade_activity extends block_base {
             return false;
         }
 
-        // Course page: allow so the block appears in the list and can be added.
-        if ($page->context->contextlevel === CONTEXT_COURSE) {
-            return has_capability('moodle/course:manageactivities', $page->context)
-                || has_capability('moodle/grade:edit', $page->context);
-        }
-
-        // Must be in a module context for full behaviour.
+        // Must be in a module context.
         if ($page->context->contextlevel !== CONTEXT_MODULE) {
             return false;
         }
@@ -120,13 +114,8 @@ class block_grade_activity extends block_base {
 
         $context = $this->context;
 
-        // On course page (or other non-activity): show short instructions.
+        // Must be in a module context.
         if ($context->contextlevel !== CONTEXT_MODULE) {
-            $this->content->text = $OUTPUT->notification(
-                get_string('addonactivitypage', 'block_grade_activity'),
-                'info',
-                false
-            );
             return $this->content;
         }
 
