@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 $string['pluginname']          = 'Grade Activity';
 $string['grade_activity:addinstance']   = 'Add a Grade Activity block';
 $string['grade_activity:myaddinstance'] = 'Add a Grade Activity block to the My page';
+$string['addonactivitypage']   = 'This block is used on activity pages. Turn editing on, open an activity (e.g. Page, URL) and add the Grade Activity block there to enable grading for that activity.';
 
 // Setup state.
 $string['enablegrading'] = 'Enable Grading for {$a}';
