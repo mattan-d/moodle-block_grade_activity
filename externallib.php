@@ -20,7 +20,8 @@
  * Provides AJAX endpoints for enabling grading and saving grades.
  *
  * @package    block_grade_activity
- * @copyright  2025 Your Name
+ * @copyright  CentricApp LTD
+ * @author     Dev Team <dev@centricapp.co.il>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

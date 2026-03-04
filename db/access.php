@@ -18,7 +18,8 @@
  * Capability definitions for block_grade_activity.
  *
  * @package    block_grade_activity
- * @copyright  2025 Your Name
+ * @copyright  CentricApp LTD
+ * @author     Dev Team <dev@centricapp.co.il>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

@@ -23,7 +23,8 @@
  *  - Toast notification on success.
  *
  * @module     block_grade_activity/grade_handler
- * @copyright  2025 Your Name
+ * @copyright  CentricApp LTD
+ * @author     Dev Team <dev@centricapp.co.il>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
